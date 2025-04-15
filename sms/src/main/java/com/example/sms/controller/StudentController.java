@@ -2,6 +2,7 @@ package com.example.sms.controller;
 
 import com.example.sms.entity.Student;
 import com.example.sms.repo.StudentRepo;
+import com.example.sms.service.StudentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,55 +12,39 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:4200")
 public class StudentController {
     @Autowired
-    StudentRepo studentRepo;
+    StudentService studentService;
 
     @PostMapping("/api/students")
     public ResponseEntity<Student> saveStudent(@RequestBody Student student) {
-       return new ResponseEntity<>(studentRepo.save(student), HttpStatus.CREATED);
+       return new ResponseEntity<>(studentService.saveStudent(student), HttpStatus.CREATED);
     }
 
     @GetMapping("api/students")
     public ResponseEntity<List<Student>> getStudents() {
-        return new ResponseEntity<>(studentRepo.findAll(), HttpStatus.OK);
+        return new ResponseEntity<>(studentService.getAllStudents(), HttpStatus.OK);
     }
 
     @GetMapping("api/students/{id}")
     public ResponseEntity<Student> getStudent(@PathVariable long id) {
-        Optional<Student> student = studentRepo.findById(id);
-        if(student.isPresent()) {
-            return new ResponseEntity<>(student.get(), HttpStatus.OK);
-        }
-        else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        return studentService.getStudentById(id)
+                .map(student -> new ResponseEntity<>(student, HttpStatus.OK))
+                .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @PutMapping("api/students/{id}")
     public ResponseEntity<Student> updateStudent(@PathVariable long id, @RequestBody Student stud) {
-        Optional<Student> student = studentRepo.findById(id);
-        if(student.isPresent()) {
-            student.get().setStudentName(stud.getStudentName());
-            student.get().setStudentAddress(stud.getStudentAddress());
-            student.get().setStudentEmail(stud.getStudentEmail());
-            return new ResponseEntity<>(studentRepo.save(student.get()), HttpStatus.OK);
-        }
-        else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        return studentService.updateStudent(id, stud)
+                .map(updated -> new ResponseEntity<>(updated, HttpStatus.OK))
+                .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("api/students/{id}")
     public ResponseEntity<Void> deleteStudent(@PathVariable long id) {
-        Optional<Student> student = studentRepo.findById(id);
-        if(student.isPresent()) {
-            studentRepo.deleteById(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        }
-        else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        boolean deleted = studentService.deleteStudent(id);
+        return deleted ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
 }
